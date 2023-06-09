@@ -9,7 +9,7 @@ Run the makefile to pre-parse the sage files to produce python files, these can 
 For classical symbols, it is enough to instantiate an instance of `ModSymbSpace`, and then either manually create a modular symbol (`createModularSymbol`), compute one from a basis (`getBasis`), or load a previously saved modular symbol (`loadModularSymbol`). Modular symbols can be called as functions on matrices, this evaluates the symbol on the divisor corresponding to that matrix. They also support arithmetic (addition and scalar multiplication on the left), and Hecke operators (`hecke`). Modular symbols can be saved to file for future use (`save`), which overwrites the file when called.
 
 #### Notes
-Currently only levels that are square free (as ideals) are supported, and trivial characters. Only the Hecke operators T_ell and U_ell for ell prime can be computed.
+Currently only levels that are square free (as ideals) are supported, and modular symbols with trivial character. Only the Hecke operators T_ell and U_ell for ell prime can be computed, other operators should be computed via the usual formulae.
 
 
 ### Overconvergent Modular Symbols
