@@ -1,7 +1,5 @@
-import fund_dom
-
 class ClassicalModSymb:
-	def __init__(self, parent, values): #wt is normalised like a modular symbol, wt = 0 is constant coefficients. values are /tuples/ of coset index dictionary, taking values as lists of lists, first index x, second y
+	def __init__(self, parent, values): #values are a dictionary of /tuples/ with coset index, taking values as lists of lists, first index x, second y
 		self.parent = parent
 		self.values = values
 	
@@ -15,7 +13,7 @@ class ClassicalModSymb:
 			for a in ell_id.residues():
 				Up = matrix(self.parent.K, 2, 2, [1, a, 0, ell])
 				new_mat = Up * mat
-				val = self.parent.dist_act(Up, self(new_mat))
+				val = self.parent.distAct(Up, self(new_mat))
 				for i in range(self.parent.wt + 1):
 					for j in range(self.parent.wt + 1):
 						out_vals[key][i][j] += val[i][j]
@@ -23,7 +21,7 @@ class ClassicalModSymb:
 			if self.parent.N not in ell_id:
 				Up = matrix(self.parent.K, 2, 2, [ell, 0, 0, 1])
 				new_mat = Up * mat
-				val = self.parent.dist_act(Up, self(new_mat))
+				val = self.parent.distAct(Up, self(new_mat))
 				for i in range(self.parent.wt + 1):
 					for j in range(self.parent.wt + 1):
 						out_vals[key][i][j] += val[i][j]
@@ -35,7 +33,7 @@ class ClassicalModSymb:
 		out = [[0 for i in range(self.parent.wt + 1)] for j in range(self.parent.wt + 1)]
 		path = self.parent.dom.path(matrix)
 		for term in path.data:
-			summand = self.parent.dist_act(term[0].A.inverse(), self.values[tuple(term[1])])
+			summand = self.parent.distAct(term[0].A.inverse(), self.values[tuple(term[1])])
 			for i in range(self.parent.wt + 1):
 				for j in range(self.parent.wt + 1):
 					out[i][j] += term[0].n * summand[i][j]
@@ -67,4 +65,11 @@ class ClassicalModSymb:
 					new_vals[key][i][j] = const * self.values[key][i][j]
 		
 		return ClassicalModSymb(self.parent, new_vals)
+	
+	def save(self, filename):
+		f = open(filename, "w")
 		
+		for cst in self.values:
+			f.write("{0} : {1}\n".format(cst, self.values[cst]))
+		
+		f.close()

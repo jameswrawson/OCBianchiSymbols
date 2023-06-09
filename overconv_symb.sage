@@ -13,7 +13,7 @@ class OverconvSymb:
 			for a in ell_id.residues():
 				Up = matrix(self.parent.K, 2, 2, [1, a, 0, ell])
 				new_mat = Up * mat
-				val = self.parent.dist_act(Up, self(new_mat))
+				val = self.parent.distAct(Up, self(new_mat))
 				for i in range(self.parent.prec):
 					for j in range(self.parent.prec):
 						out_vals[key][i][j] += val[i][j]
@@ -21,7 +21,7 @@ class OverconvSymb:
 			if self.parent.N not in ell_id:
 				Up = matrix(self.parent.K, 2, 2, [ell, 0, 0, 1])
 				new_mat = Up * mat
-				val = self.parent.dist_act(Up, self(new_mat))
+				val = self.parent.distAct(Up, self(new_mat))
 				for i in range(self.parent.prec):
 					for j in range(self.parent.prec):
 						out_vals[key][i][j] += val[i][j]
@@ -33,7 +33,7 @@ class OverconvSymb:
 		out = [[0 for i in range(self.parent.prec)] for j in range(self.parent.prec)]
 		path = self.parent.dom.path(matrix)
 		for term in path.data:
-			summand = self.parent.dist_act(term[0].A.inverse(), self.values[tuple(term[1])])
+			summand = self.parent.distAct(term[0].A.inverse(), self.values[tuple(term[1])])
 			for i in range(self.parent.prec):
 				for j in range(self.parent.prec):
 					out[i][j] += self.parent.padics(term[0].n) * summand[i][j]

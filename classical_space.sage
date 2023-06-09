@@ -18,7 +18,7 @@ class ModSymbSpace:
 							if term[1] == cst:
 								dist = [[0 for k in range(wt + 1)] for l in range(wt + 1)]
 								dist[i][j] = 1
-								new_dist = self.dist_act(term[0].A.inverse(), dist)
+								new_dist = self.distAct(term[0].A.inverse(), dist)
 								for k in range(wt + 1):
 									for l in range(wt + 1):
 										totals[k][l] += term[0].n * new_dist[k][l]
@@ -27,14 +27,13 @@ class ModSymbSpace:
 							for l in range(wt + 1):
 								values.append(totals[k][l])
 					relns.append(values)
-		self.relns = matrix(self.K, relns) #transpose of the expected matrix
+		self.relns = matrix(self.K, relns, sparse=True) #transpose of the expected matrix
 		self.solved = False
 	
-	def dist_act(self, mat, dist):
+	def distAct(self, mat, dist):
 		R = PolynomialRing(self.K, 2, 'xy')
 		(x, y) = R.gens()
 		f = 0
-		det = mat.determinant()
 		for i in range(self.wt + 1):
 			for j in range(self.wt + 1):
 				f += dist[i][j] * binomial(self.wt, i) * binomial(self.wt, j) * x^(self.wt - i) * y^(self.wt - j)
@@ -58,6 +57,39 @@ class ModSymbSpace:
 	def createModularSymbol(self, values):
 		return classical_modsymb.ClassicalModSymb(self, values)
 	
+	def loadModularSymbol(self, filename):
+		f = open(filename, "r")
+		line = ""
+		data = {}
+		line = f.readline()
+		while line != "#"*10 + "\n":
+			if line == "":
+				break
+			
+			key, value = line[:-1].split(" : ")
+			cst = []
+			reps = key[1:-1].split(", ")
+			for rep in reps:
+				if rep == "'inf'":
+					cst.append('inf')
+				else:
+					cst.append(self.K(rep))
+			
+			rows = value[1:-1].split("], ")
+			dat = []
+			for row in rows:
+				vals = row[1:].split(", ")
+				out_row = []
+				for val in vals:
+					out_row.append(self.K(val))
+				
+				dat.append(out_row)
+			
+			data[tuple(cst)] = dat
+			line = f.readline()
+		
+		return self.createModularSymbol(data)
+	
 	def dimension(self):
 		if self.solved:
 			return len(self.basis)
@@ -66,7 +98,7 @@ class ModSymbSpace:
 			self.solved = True
 			return len(self.basis)
 	
-	def get_basis(self):
+	def getBasis(self):
 		if not self.solved:
 			self.space = self.relns.kernel()
 			self.basis = self.space.basis()

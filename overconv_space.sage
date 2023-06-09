@@ -30,12 +30,13 @@ class OCModSymbSpace:
 			self.gen = -root - c
 		
 		self.classical = classical_space.ModSymbSpace(field, level, wt)
+		self.solved = False
 	
 	def convert(self, num_elt): #convert number field element into p-adic numbers
 		(k, l) = utilities.get_cpts(self.K, self.K(num_elt))
 		return (self.padics(k) + self.padics(l)*self.gen).add_bigoh(self.prec)
 		
-	def dist_act(self, mat, dist):
+	def distAct(self, mat, dist):
 		R.<x, y> = PowerSeriesRing(self.padics, default_prec = self.prec)
 		a, b, c, d = mat[0][0], mat[0][1], mat[1][0], mat[1][1]
 		abar, bbar, cbar, dbar = a.conjugate(), b.conjugate(), c.conjugate(), d.conjugate()
@@ -61,10 +62,10 @@ class OCModSymbSpace:
 	def createModularSymbol(self, values):
 		return overconv_symb.OverconvSymb(self, values)
 	
-	def get_class_basis(self):
-		return self.classical.get_basis()
+	def getClassicalBasis(self):
+		return self.classical.getBasis()
 	
-	def liftClassical(self, form, e_val1, e_val2):
+	def liftClassical(self, form, e_val):
 		data = {}
 		for cst in self.classical.dom.cosets:
 			dat = [[self.padics(0) for i in range(self.prec)] for j in range(self.prec)]
@@ -78,8 +79,8 @@ class OCModSymbSpace:
 		symb = self.createModularSymbol(data)
 		for i in range(self.prec):
 			prim = self.prime.gens_reduced()[0]
-			symb = (1 / self.convert(e_val1)) * symb.hecke(prim)
-			symb = (1 / self.convert(e_val2)) * symb.hecke(prim.conjugate())
+			symb = symb.hecke(prim)
+			symb = (1 / self.convert(e_val)) * symb.hecke(prim.conjugate())
 		
 		return symb
 	
@@ -109,3 +110,52 @@ class OCModSymbSpace:
 			line = f.readline()
 		
 		return createModularSymbol(data)
+	
+	def getBasis(self):
+		if self.solved:
+			return self.basis
+		
+		relns = []
+		for cst in self.classical.dom.cosets:
+			for i in range(self.prec):
+				for j in range(self.prec):
+					if i + j >= self.prec:
+						continue
+					
+					values = []
+					for reln in self.classical.dom.relations:
+						totals = [[0 for k in range(self.prec)] for l in range(self.prec)]
+						for term in reln.data:
+							if term[1] == cst:
+								dist = [[0 for k in range(self.prec)] for l in range(self.prec)]
+								dist[i][j] = 1.add_bigoh(self.prec - i - j)
+								new_dist = self.distAct(term[0].A.inverse(), dist)
+								for k in range(self.prec):
+									for l in range(self.prec):
+										totals[k][l] += term[0].n * new_dist[k][l]
+						
+						for k in range(self.prec):
+							for l in range(self.prec):
+								res = self.prec
+								if i > self.wt or j > self.wt:
+										res = max(0, self.prec - i - j)
+								values.append(totals[k][l].add_bigoh(res))
+					relns.append(values)
+		
+		self.relns = matrix(self.K, relns, sparse=True)
+		
+		basis = self.relns.kernel().basis()
+		self.solved = True
+		self.basis = []
+		
+		for elt in basis:
+			data = []
+			for i in range(len(self.classical.dom.cosets)):
+				data.append((tuple(self.dom.cosets[i]), 
+				[[elt[i*(self.prec)**2 + self.prec*j + k] for k in range(self.prec)] for j in range(self.prec)]))
+			symbol = self.createModularSymbol(dict(data))
+			self.basis.append(symbol)
+		
+		self.solved = True
+		
+		return self.basis
