@@ -83,29 +83,41 @@ class OverconvSymb:
 		errs1 = []
 		errs2 = []
 		for reln in self.parent.classical.dom.relations:
-			err1 = 0
-			err2 = 0
 			for term in reln.data:
-				d, c = term[0].A[1][1], term[0].A[1][0]
-				dbar, cbar = term[0].A[1][1].conjugate(), term[0].A[1][0].conjugate()
-				d, c = self.parent.convert(d), self.parent.convert(c)
-				dbar, cbar = self.parent.convert(dbar), self.parent.convert(cbar)
+				a, b, c, d = term[0].A[0][0], term[0].A[0][1], term[0].A[1][0], term[0].A[1][1]
+				abar, bbar, cbar, dbar = a.conjugate(), b.conjugate(), c.conjugate(), d.conjugate()
+				a, b, c, d = self.parent.convert(a), self.parent.convert(b), self.parent.convert(c), self.parent.convert(d)
+				abar, bbar, cbar, dbar = self.parent.convert(abar), self.parent.convert(bbar), self.parent.convert(cbar), self.parent.convert(dbar)
 				u = (-c / d)
 				ubar = (-cbar / dbar)
 				
-				cont1 = 0
-				cont2 = 0
-				cont1 += d.log() * self.values[tuple(term[1])][0][0]
-				cont2 += dbar.log() * self.values[tuple(term[1])][0][0]
+				R.<x, y> = PowerSeriesRing(self.parent.padics, default_prec = self.parent.prec)
+				log1 = d.log()
+				log2 = dbar.log()
 				for i in range(1, self.parent.prec):
-					cont1 += (((-1)**(i + 1) * u**i)/i) * self.values[tuple(term[1])][i][0]
-					cont2 += (((-1)**(i + 1) * ubar**i)/i) * self.values[tuple(term[1])][0][i]
+					log1 += ((-1)**(i + 1) * (u*x)**i)/i
+					log2 += ((-1)**(i + 1) * (ubar*y)**i)/i
 				
-				err1 += term[0].n * cont1
-				err2 += term[0].n * cont2
-			
-			errs1.append(err1)
-			errs2.append(err2)
+				f1 = (c + d*x)**self.parent.wt * (cbar + dbar*y)**self.parent.wt * log1
+				f2 = (c + d*x)**self.parent.wt * (cbar + dbar*y)**self.parent.wt * log2
+				
+				for i in range(self.parent.wt + 1):
+					for j in range(self.parent.wt + 1):
+						err1 = 0
+						err2 = 0
+						g1 = f1 * ((a*x - b)/(d - c*x))**i * ((abar*y - bbar)/(dbar - cbar*y))**j
+						g2 = f2 * ((a*x - b)/(d - c*x))**i * ((abar*y - bbar)/(dbar - cbar*y))**j
+						g1coeffs = g1.coefficients()
+						g2coeffs = g2.coefficients()
+						for k in range(self.parent.prec):
+							for l in range(self.parent.prec):
+								err1 += g1coeffs[k][l] * self.values[k][l] 
+								err2 += g2coeffs[k][l] * self.values[k][l]
+				
+						err1 *= term[0].n
+						err2 *= term[0].n
+						errs1.append(err1)
+						errs2.append(err2)
 		
 		reln_mat = [[self.convert(elt) for elt in row] for row in self.parent.classical.relns]
 		p_adic_relns = matrix(self.parent.padics, reln_mat, sparse=True)
