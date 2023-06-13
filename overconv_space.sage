@@ -15,8 +15,9 @@ class OCModSymbSpace:
 		gen = prime.gens_reduced()[0]
 		a, b = utilities.get_cpts(field, gen)
 		poly = field.polynomial()
-		c = poly.coefficients()[1]
-		d = poly.coefficients()[0]
+		coeffs = poly.coefficients(sparse=False)
+		c = coeffs[1]
+		d = coeffs[0]
 		disc = c**2 - 4*d
 		root = self.padics(disc).square_root(extend=False)
 		root = (-c + root)/2
