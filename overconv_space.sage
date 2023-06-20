@@ -66,7 +66,7 @@ class OCModSymbSpace:
 	def getClassicalBasis(self):
 		return self.classical.getBasis()
 	
-	def liftClassical(self, form, e_val):
+	def liftClassical(self, form, e_val, verbose=False):
 		data = {}
 		for cst in self.classical.dom.cosets:
 			dat = [[self.padics(0) for i in range(self.prec)] for j in range(self.prec)]
@@ -79,9 +79,11 @@ class OCModSymbSpace:
 		
 		symb = self.createModularSymbol(data)
 		for i in range(self.prec):
+			if verbose:
+				print("Hecke operator pair {0} of {1}".format(i + 1, self.prec))
 			prim = self.prime.gens_reduced()[0]
-			symb = symb.hecke(prim)
-			symb = (1 / self.convert(e_val)) * symb.hecke(prim.conjugate())
+			symb = symb.hecke(prim, verbose=verbose)
+			symb = (1 / self.convert(e_val)) * symb.hecke(prim.conjugate(), verbose=verbose)
 		
 		return symb
 	
@@ -91,26 +93,33 @@ class OCModSymbSpace:
 		data = {}
 		if appended:
 			while line != "#"*10 + "\n":
-				f.readline()
+				line = f.readline()
 		
 		line = f.readline()
 		while line:
 			key, value = line[:-1].split(" : ")
+			cst = []
+			reps = key[1:-1].split(", ")
+			for rep in reps:
+				if rep == "'inf'":
+					cst.append('inf')
+				else:
+					cst.append(self.K(rep))
 			
 			dat = []
-			rows = value[1:-1].split("[, ")
+			rows = value[1:-2].split("], ")
 			for row in rows:
 				vals = row[1:].split(", ")
 				out_row = []
 				for val in vals:
-					out_row.append(self.padics(val))
+					out_row.append(self.padics(sage_eval(val)))
 				
 				dat.append(out_row)
 			
 			data[tuple(cst)] = dat
 			line = f.readline()
 		
-		return createModularSymbol(data)
+		return self.createModularSymbol(data)
 	
 	def getBasis(self):
 		if self.solved:

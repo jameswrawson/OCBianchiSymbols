@@ -75,7 +75,7 @@ class ModSymbSpace:
 				else:
 					cst.append(self.K(rep))
 			
-			rows = value[1:-1].split("], ")
+			rows = value[1:-2].split("], ")
 			dat = []
 			for row in rows:
 				vals = row[1:].split(", ")

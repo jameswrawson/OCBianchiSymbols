@@ -3,9 +3,14 @@ class OverconvSymb:
 		self.parent = parent
 		self.values = values
 	
-	def hecke(self, ell):
+	def hecke(self, ell, verbose=False):
 		out_vals = {}
+		num_csts = len(self.parent.dom.cosets)
+		decile = floor(num_csts / 10)
+		loop = 1
 		for cst in self.parent.dom.cosets:
+			if verbose and (loop % decile) == 0:
+				print("Hecke {0}% done".format((loop / decile) * 10))
 			mat = self.parent.dom.relations[0].get_rep(cst)
 			out_vals[tuple(cst)] = [[0 for i in range(self.parent.prec)] for j in range(self.parent.prec)]
 			key = tuple(cst)
@@ -25,6 +30,12 @@ class OverconvSymb:
 				for i in range(self.parent.prec):
 					for j in range(self.parent.prec):
 						out_vals[key][i][j] += val[i][j]
+			
+			loop += 1
+		
+		if verbose:
+			print("Hecke 100% done")
+		
 		return OverconvSymb(self.parent, out_vals)
 		
 		
@@ -83,6 +94,8 @@ class OverconvSymb:
 		errs1 = []
 		errs2 = []
 		for reln in self.parent.classical.dom.relations:
+			cont1 = [0 for i in range((self.parent.wt+1)**2)]
+			cont2 = [0 for i in range((self.parent.wt+1)**2)]
 			for term in reln.data:
 				a, b, c, d = term[0].A[0][0], term[0].A[0][1], term[0].A[1][0], term[0].A[1][1]
 				abar, bbar, cbar, dbar = a.conjugate(), b.conjugate(), c.conjugate(), d.conjugate()
@@ -111,26 +124,32 @@ class OverconvSymb:
 						g2coeffs = g2.coefficients()
 						for k in range(self.parent.prec):
 							for l in range(self.parent.prec):
-								err1 += g1coeffs[k][l] * self.values[k][l] 
-								err2 += g2coeffs[k][l] * self.values[k][l]
+								if x**k * y**l in g1coeffs:
+									err1 += g1coeffs[x**k * y**l] * self.values[tuple(term[1])][k][l] 
+								
+								if x**k * y**l in g2coeffs:
+									err2 += g2coeffs[x**k * y**l] * self.values[tuple(term[1])][k][l] 
 				
 						err1 *= term[0].n
 						err2 *= term[0].n
-						errs1.append(err1)
-						errs2.append(err2)
+						cont1[(self.parent.wt + 1)*i + j] += err1
+						cont2[(self.parent.wt + 1)*i + j] += err1
+			
+			errs1 = errs1 + cont1
+			errs2 = errs2 + cont2
 		
-		reln_mat = [[self.convert(elt) for elt in row] for row in self.parent.classical.relns]
+		reln_mat = [[self.parent.convert(elt) for elt in row] for row in self.parent.classical.relns]
 		p_adic_relns = matrix(self.parent.padics, reln_mat, sparse=True)
 		try:
-			soln = p_adic_relns.solve_left(errs1)
-			soln = p_adic_relns.solve_left(errs2)
+			soln = p_adic_relns.solve_left(vector(self.parent.padics, errs1))
+			soln = p_adic_relns.solve_left(vector(self.parent.padics, errs2))
 			raise False
-		except:
+		except Exception as inst:
 			reln_mat.append(errs2)
 			p_adic_relns = matrix(self.parent.padics, reln_mat, sparse=True)
 			try:
-				soln = p_adic_relns.solve_left(errs1)
+				soln = p_adic_relns.solve_left(vector(self.parent.padics, errs1))
 				return -soln[-1]
-			except:
+			except Exception as inst2:
 				return "inf"
 		
